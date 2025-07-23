@@ -1,0 +1,107 @@
+{
+  "name": "@ghosthost/lambda-deploy",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Deploys a website from a repository",
+  "main": "dist/index.js",
+  "engines": {
+    "node": "20",
+    "yarn": "please-use-npm",
+    "pnpm": "please-use-npm"
+  },
+  "engineStrict": true,
+  "scripts": {
+    "docker:build": "docker compose run --rm function npm run build",
+    "docker:generate-types": "docker compose run --rm function bash -c 'cd src/graphql && npx graphql-codegen'",
+    "docker:get-logs": "docker compose exec localhost.localstack.cloud awslocal logs get-log-events --log-group-name '/aws/lambda/function' --log-stream-name `docker compose exec localhost.localstack.cloud awslocal logs describe-log-streams --log-group-name '/aws/lambda/function' --max-items 1 --order-by LastEventTime --descending --query 'logStreams[].logStreamName' --output text | head -n 1`",
+    "docker:invoke": "f() { docker compose exec localhost.localstack.cloud awslocal lambda invoke --function-name function --payload \"$@\" output.txt; }; f",
+    "docker:lint": "docker compose run --rm function npx eslint ./src",
+    "docker:test": "docker compose run --rm function npx jest",
+    "build": "esbuild src/index.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=dist/index.js",
+    "clean": "docker compose down --remove-orphans && rm -rf dist node_modules coverage .husky/_",
+    "generate-types": "cd src/graphql && npx graphql-codegen",
+    "lint": "npx eslint ./src",
+    "prepare": "cd .. && husky install function/.husky",
+    "start": "esbuild src/index.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=dist/index.js --watch=forever",
+    "test": "npx jest"
+  },
+  "author": "Micah Henning <micah@infiniteserieslabs.com>",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "homepage": "https://github.com/Ghost-Host-ISL/lambda-deploy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ghost-Host-ISL/lambda-deploy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ghost-Host-ISL/lambda-deploy/issues"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^17.6.6",
+    "@commitlint/config-conventional": "^17.6.6",
+    "@graphql-codegen/cli": "^5.0.0",
+    "@graphql-codegen/typescript": "^4.0.1",
+    "@semantic-release/github": "^11.0.1",
+    "@semantic-release/release-notes-generator": "^14.0.3",
+    "@types/aws-lambda": "^8.10.119",
+    "@types/jest": "^29.5.2",
+    "@typescript-eslint/eslint-plugin": "^5.61.0",
+    "@typescript-eslint/parser": "^5.61.0",
+    "commitizen": "^4.3.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^8.44.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-airbnb-typescript": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jest": "^27.2.2",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "semantic-release": "^24.2.3",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.1.6"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "signed-off-by": [
+        2,
+        "always",
+        "Signed-off-by"
+      ]
+    }
+  },
+  "config": {
+    "commitizen": {
+      "path": "/app/function/node_modules/cz-conventional-changelog"
+    }
+  },
+  "release": {
+    "debug": true,
+    "branches": [
+      "+([0-9])?(.{+([0-9]),x}).x",
+      "main",
+      "next",
+      "next-major",
+      {
+        "name": "beta",
+        "prerelease": true
+      },
+      {
+        "name": "alpha",
+        "prerelease": true
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github"
+    ]
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.645.0",
+    "tar": "^7.4.3"
+  }
+}
